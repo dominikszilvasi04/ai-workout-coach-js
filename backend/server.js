@@ -27,12 +27,12 @@ app.post('/api/v1/generate-workout', async (req, res) => {
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
 
-    const prompt = `Generate a ${days}-day ${goal} workout plan using ${equipment}. Format exactly like this:
-    Day 1 (~total time):
-    • Exercise 4x12 – one short tip on proper form
-    • Exercise 3x15 – one short tip on proper form
-    • Exercise 3x12 – one short tip on proper form
-Each day should have 4–5 exercises. Keep instructions very concise, focused only on form cues or general tip. Include an estimated total time for the day in parentheses next to the day. Use consistent, neat formatting with each exercise on a new line. Do not add introductions, explanations, or extra commentary.`;
+    const prompt = `You are an AI workout assistant. Generate a ${days}-day workout plan for the goal of '${goal}' with '${equipment}'.
+    Your response must be concise and follow this exact format:
+    Day X (~time):
+    • Exercise SetsxReps – Tip
+    Constraints: Each day must have 4-5 exercises. Tips must be very short form cues. Do not include any intro, summary, or conversational text.
+    Start generating Day 1 immediately.`;
 
     const stream = await openai.chat.completions.create({
       model: 'gpt-5-nano',

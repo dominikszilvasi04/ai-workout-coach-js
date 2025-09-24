@@ -63,40 +63,28 @@ function App() {
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+   const generatePlan = async () => {
     setLoading(true);
     setError('');
-    setWorkoutPlan(''); // Clear previous plan
+    setWorkoutPlan('');
 
     try {
       const response = await fetch('http://localhost:8080/api/v1/generate-workout', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       });
 
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
-      }
+      if (!response.ok) throw new Error('Network response was not ok');
 
-      // Get the reader from the response body to read the stream
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
-
-      // Read the stream chunk by chunk
       while (true) {
         const { done, value } = await reader.read();
-        if (done) {
-          break; // The stream is finished
-        }
-        // Decode the chunk and append it to our state
+        if (done) break;
         const chunk = decoder.decode(value);
         setWorkoutPlan((prevPlan) => prevPlan + chunk);
       }
-
     } catch (err) {
       setError('Failed to generate workout plan. Please try again.');
     } finally {
@@ -104,23 +92,55 @@ function App() {
     }
   };
   
+  // --- UPDATED: handleSubmit now just calls the reusable function ---
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    generatePlan();
+  };
+  
   const handleCopy = () => {
-    navigator.clipboard.writeText(workoutPlan.trim());
-    setCopyText('Copied!');
-    setTimeout(() => setCopyText('Copy'), 2000); // Reset after 2 seconds
+    // We now get the text directly from the ref to ensure we don't copy button text
+    const planText = planRef.current?.innerText;
+    if (planText) {
+      navigator.clipboard.writeText(planText);
+      setCopyText('Copied!');
+      setTimeout(() => setCopyText('Copy'), 2000);
+    }
   };
 
   const handleDownloadPdf = () => {
-    const input = planRef.current;
-    html2canvas(input, { backgroundColor: '#1f2937' }).then((canvas) => {
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      pdf.save('ai-workout-plan.pdf');
+    const planText = planRef.current?.innerText;
+    if (!planText) return;
+
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const margin = 15;
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const usableWidth = pageWidth - margin * 2;
+    let y = margin + 10;
+
+    pdf.setFontSize(18);
+    pdf.text("Your AI Workout Plan", pageWidth / 2, y, { align: 'center' });
+    y += 10;
+    pdf.setLineWidth(0.5);
+    pdf.line(margin, y, pageWidth - margin, y);
+    y += 10;
+
+    pdf.setFontSize(10);
+    const lines = pdf.splitTextToSize(planText, usableWidth);
+    
+    lines.forEach(line => {
+      if (y + 5 > pageHeight - margin) {
+        pdf.addPage();
+        y = margin;
+      }
+      pdf.text(line, margin, y);
+      y += 5;
     });
+
+    pdf.save('ai-workout-plan.pdf');
   };
+
 
   return (
     <div className="app-container">
@@ -181,15 +201,16 @@ function App() {
       {error && <p className="app-subtitle" style={{color: '#f87171'}}>{error}</p>}
 
       {workoutPlan && (
-        <div className="workout-plan" ref={planRef}>
+        <div className="workout-plan">
           <div className="plan-header">
             <h2>Your Custom Workout Plan</h2>
             <div className="plan-actions">
+              <button onClick={generatePlan} className="button">Regenerate</button>
               <button onClick={handleCopy} className="button">{copyText}</button>
               <button onClick={handleDownloadPdf} className="button button-primary">Download PDF</button>
             </div>
           </div>
-          <pre>
+          <pre ref={planRef}>
             {workoutPlan
               .split('\n')
               .map(line => line.trim())
