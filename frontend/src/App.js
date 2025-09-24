@@ -1,57 +1,47 @@
-import React, { useState, useRef, useEffect } from 'react'; // Import useEffect
-import axios from 'axios';
+import React, { useState, useRef, useEffect } from 'react';
 import Modal from './Modal';
 import './App.css';
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 
 // --- FULL LIST OF SUGGESTIONS ---
 const allGoalOptions = [
   'Build Muscle', 'Lose Weight', 'Increase Strength', 'Cardio Endurance', 'Improve Flexibility', 'Body Recomposition', 'General Fitness', 'Athletic Performance', 'Hypertrophy', 'Powerlifting', 'Functional Fitness', 'Core Strength', 'Improve Posture', 'Toning', 'HIIT Training', 'Yoga', 'Pilates', 'Circuit Training', 'CrossFit', 'Bodybuilding', 'Weightlifting', 'Calisthenics', 'Plyometrics', 'Agility Training', 'Balance Training',
 ];
-
 const allEquipmentOptions = [
   'Dumbbells', 'Barbell', 'Bodyweight', 'Kettlebells', 'Resistance Bands', 'Squat Rack', 'Bench', 'Pull-up Bar', 'Cable Machine', 'Leg Press Machine', 'Treadmill', 'Stationary Bike', 'Rowing Machine', 'Medicine Ball', 'None', 'Yoga Mat', 'Foam Roller', 'Jump Rope', 'StairMaster', 'Elliptical Machine', 'Smith Machine', 'Dip Station', 'Ab Wheel', 'TRX Straps', 'Hex Bar',
 ];
-
-const VISIBLE_OPTIONS_COUNT = 15; // How many options to show at once
+const VISIBLE_OPTIONS_COUNT = 15;
 
 function App() {
   const [formData, setFormData] = useState({
-    goal: 'Build Muscle',
-    equipment: 'Dumbbells',
+    goal: ['Build Muscle'], // Corrected: goal is an array
+    equipment: ['Dumbbells', 'Bodyweight'],
     days: 3,
   });
   const [modalType, setModalType] = useState(null);
-  
-  // --- New state for the VISIBLE suggestions ---
   const [visibleGoals, setVisibleGoals] = useState([]);
   const [visibleEquipment, setVisibleEquipment] = useState([]);
-  
+  const [customGoal, setCustomGoal] = useState(''); // Added state for custom goal
+  const [customEquipment, setCustomEquipment] = useState('');
   const [workoutPlan, setWorkoutPlan] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [copyText, setCopyText] = useState('Copy');
   const planRef = useRef(null);
 
-  // --- Effect to initialize the visible lists ---
   useEffect(() => {
     setVisibleGoals(allGoalOptions.slice(0, VISIBLE_OPTIONS_COUNT));
     setVisibleEquipment(allEquipmentOptions.slice(0, VISIBLE_OPTIONS_COUNT));
   }, []);
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-  
-  // --- This function now handles both selecting and refreshing the list ---
   const handleSelect = (type, option) => {
-    // Add the selected option to the form input
     const currentVal = formData[type];
-    const newVal = currentVal ? `${currentVal}, ${option}` : option;
-    setFormData({ ...formData, [type]: newVal });
+    // This logic now works for both goals and equipment
+    if (!currentVal.includes(option)) {
+      setFormData(prev => ({ ...prev, [type]: [...currentVal, option] }));
+    }
 
-    // Refresh the list of suggestions
+    // Refresh the visible list
     if (type === 'goal') {
       const remainingGoals = allGoalOptions.filter(g => !visibleGoals.includes(g));
       const nextGoal = remainingGoals.length > 0 ? remainingGoals[0] : allGoalOptions[Math.floor(Math.random() * allGoalOptions.length)];
@@ -63,18 +53,47 @@ function App() {
     }
   };
 
-   const generatePlan = async () => {
+  // --- Added handlers for custom goals ---
+  const handleAddCustomGoal = (e) => {
+    if (e.key === 'Enter' && customGoal.trim() !== '') {
+      e.preventDefault();
+      handleSelect('goal', customGoal.trim());
+      setCustomGoal('');
+    }
+  };
+  const handleRemoveGoal = (itemToRemove) => {
+    setFormData(prev => ({ ...prev, goal: prev.goal.filter(item => item !== itemToRemove) }));
+  };
+
+  const handleAddCustomEquipment = (e) => {
+    if (e.key === 'Enter' && customEquipment.trim() !== '') {
+      e.preventDefault();
+      handleSelect('equipment', customEquipment.trim());
+      setCustomEquipment('');
+    }
+  };
+  const handleRemoveEquipment = (itemToRemove) => {
+    setFormData(prev => ({ ...prev, equipment: prev.equipment.filter(item => item !== itemToRemove) }));
+  };
+
+  const generatePlan = async () => {
     setLoading(true);
     setError('');
     setWorkoutPlan('');
+    
+    // Corrected: Join both goal and equipment arrays into strings for the API
+    const payload = {
+      ...formData,
+      goal: formData.goal.join(', '),
+      equipment: formData.equipment.join(', '),
+    };
 
     try {
       const response = await fetch('http://localhost:8080/api/v1/generate-workout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
-
       if (!response.ok) throw new Error('Network response was not ok');
 
       const reader = response.body.getReader();
@@ -92,14 +111,12 @@ function App() {
     }
   };
   
-  // --- UPDATED: handleSubmit now just calls the reusable function ---
   const handleSubmit = (e) => {
     e.preventDefault();
     generatePlan();
   };
   
   const handleCopy = () => {
-    // We now get the text directly from the ref to ensure we don't copy button text
     const planText = planRef.current?.innerText;
     if (planText) {
       navigator.clipboard.writeText(planText);
@@ -141,22 +158,20 @@ function App() {
     pdf.save('ai-workout-plan.pdf');
   };
 
-
   return (
     <div className="app-container">
       <Modal
         isOpen={modalType === 'goal'}
         onClose={() => setModalType(null)}
         title="Select Fitness Goal(s)"
-        options={visibleGoals} // Use the visible list from state
+        options={visibleGoals}
         onSelect={(option) => handleSelect('goal', option)}
       />
-
       <Modal
         isOpen={modalType === 'equipment'}
         onClose={() => setModalType(null)}
         title="Select Available Equipment"
-        options={visibleEquipment} // Use the visible list from state
+        options={visibleEquipment}
         onSelect={(option) => handleSelect('equipment', option)}
       />
 
@@ -165,16 +180,53 @@ function App() {
 
       <form onSubmit={handleSubmit} className="form">
         <div className="form-grid">
-          <div className="form-group">
-            <label htmlFor="goal">Fitness Goal</label>
-            <input type="text" name="goal" id="goal" value={formData.goal} onChange={handleChange} placeholder="e.g., Build Muscle" />
-            <button type="button" className="picker-button" onClick={() => setModalType('goal')}>Choose from list</button>
+          {/* --- Corrected Goal Selector UI --- */}
+          <div className="form-group grid-span-full">
+            <label>Fitness Goal(s)</label>
+            <div className="tag-selector">
+              <div className="tags-container">
+                {formData.goal.map(item => (
+                  <div key={item} className="tag">
+                    {item}
+                    <button type="button" onClick={() => handleRemoveGoal(item)}>&times;</button>
+                  </div>
+                ))}
+              </div>
+              <div className="tag-input-group">
+                <input
+                  type="text"
+                  value={customGoal}
+                  onChange={(e) => setCustomGoal(e.target.value)}
+                  onKeyDown={handleAddCustomGoal}
+                  placeholder="Type custom goal and press Enter..."
+                />
+                <button type="button" className="picker-button" onClick={() => setModalType('goal')}>Add from List</button>
+              </div>
+            </div>
           </div>
 
-          <div className="form-group">
-            <label htmlFor="equipment">Equipment</label>
-            <input type="text" name="equipment" id="equipment" value={formData.equipment} onChange={handleChange} placeholder="e.g., Dumbbells, Bodyweight" />
-            <button type="button" className="picker-button" onClick={() => setModalType('equipment')}>Choose from list</button>
+          <div className="form-group grid-span-full">
+            <label>Equipment</label>
+            <div className="tag-selector">
+              <div className="tags-container">
+                {formData.equipment.map(item => (
+                  <div key={item} className="tag">
+                    {item}
+                    <button type="button" onClick={() => handleRemoveEquipment(item)}>&times;</button>
+                  </div>
+                ))}
+              </div>
+              <div className="tag-input-group">
+                <input
+                  type="text"
+                  value={customEquipment}
+                  onChange={(e) => setCustomEquipment(e.target.value)}
+                  onKeyDown={handleAddCustomEquipment}
+                  placeholder="Type custom equipment and press Enter..."
+                />
+                <button type="button" className="picker-button" onClick={() => setModalType('equipment')}>Add from List</button>
+              </div>
+            </div>
           </div>
 
           <div className="form-group grid-span-full">
