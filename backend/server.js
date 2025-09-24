@@ -31,7 +31,7 @@ app.post('/api/v1/generate-workout', async (req, res) => {
 
     // 6. Make the API call to OpenAI
     const response = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
+      model: 'gpt-5-nano',
       messages: [
         {
           role: 'user',

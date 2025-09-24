@@ -1,0 +1,89 @@
+body {
+  background-color: #111827;
+  color: white;
+  font-family: sans-serif;
+  padding: 2rem;
+  display: flex;
+  justify-content: center;
+}
+
+.app-container {
+  width: 100%;
+  max-width: 700px;
+}
+
+.app-title {
+  font-size: 2.5rem;
+  font-weight: bold;
+  text-align: center;
+  color: #22d3ee;
+  margin-bottom: 0.5rem;
+}
+
+.app-subtitle {
+  text-align: center;
+  color: #9ca3af;
+  margin-bottom: 2rem;
+}
+
+.form {
+  background-color: #1f2937;
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #d1d5db;
+}
+
+.form-group input, .form-group select {
+  width: 100%;
+  padding: 0.75rem;
+  border-radius: 6px;
+  border: 1px solid #4b5563;
+  background-color: #374151;
+  color: white;
+  font-size: 1rem;
+}
+
+.generate-button {
+  width: 100%;
+  padding: 0.75rem;
+  font-size: 1rem;
+  font-weight: bold;
+  color: #111827;
+  background-color: #22d3ee;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.generate-button:disabled {
+  background-color: #4b5563;
+  cursor: not-allowed;
+}
+
+.workout-plan {
+  background-color: #1f2937;
+  padding: 1.5rem;
+  border-radius: 8px;
+}
+
+.workout-plan pre {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  font-family: inherit;
+  color: #d1d5db;
+  line-height: 1.6;
+}
