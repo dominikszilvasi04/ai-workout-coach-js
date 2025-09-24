@@ -1,6 +1,9 @@
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
+
 body {
   background-color: #111827;
   color: white;
@@ -37,17 +40,15 @@ body {
   padding: 1.5rem;
   border-radius: 8px;
   margin-bottom: 2rem;
-  /* --- NEW --- */
   display: flex;
   flex-direction: column;
-  gap: 1.5rem; /* This creates space between the inputs and the button */
+  gap: 1.5rem;
 }
 
 .form-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 1rem;
-  /* --- REMOVED --- We don't need margin-bottom here anymore */
 }
 
 .form-group label {
@@ -94,6 +95,7 @@ body {
   background-color: #1f2937;
   padding: 1.5rem;
   border-radius: 8px;
+  animation: fadeIn 0.5s ease-out;
 }
 
 .workout-plan h2 {
@@ -131,7 +133,21 @@ body {
   background-color: #4b5563;
 }
 
-/* Replace .action-button with these */
+/* --- Styles for Action Buttons (Copy/Download) --- */
+.plan-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.plan-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
 .button {
   border: 1px solid #22d3ee;
   color: #22d3ee;
@@ -152,4 +168,48 @@ body {
 .button-primary {
   color: #111827;
   background-color: #22d3ee;
+}
+
+/* --- Styles for Day Selector Buttons --- */
+.day-selector {
+  display: flex;
+  gap: 0.5rem;
+  background-color: #374151;
+  border-radius: 6px;
+  padding: 0.25rem;
+  border: 1px solid #4b5563;
+}
+
+.day-button {
+  flex-grow: 1;
+  background-color: transparent;
+  border: none;
+  color: #d1d5db;
+  padding: 0.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.day-button:hover {
+  background-color: #4b5563;
+}
+
+.day-button.active {
+  background-color: #22d3ee;
+  color: #111827;
+  font-weight: bold;
+}
+
+/* --- Animation for Workout Plan --- */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
