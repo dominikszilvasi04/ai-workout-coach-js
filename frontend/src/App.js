@@ -133,8 +133,19 @@ function App() {
           </div>
 
           <div className="form-group">
-            <label htmlFor="days">Days per week</label>
-            <input type="number" name="days" id="days" value={formData.days} min="1" max="7" onChange={handleChange} />
+            <label>Days per week</label>
+            <div className="day-selector">
+              {[1, 2, 3, 4, 5, 6, 7].map((day) => (
+                <button
+                  key={day}
+                  type="button"
+                  className={`day-button ${formData.days == day ? 'active' : ''}`}
+                  onClick={() => setFormData({ ...formData, days: day })}
+                >
+                  {day}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
         <button type="submit" disabled={loading} className="generate-button">
