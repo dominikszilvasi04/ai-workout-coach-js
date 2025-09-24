@@ -130,3 +130,26 @@ body {
 .picker-button:hover {
   background-color: #4b5563;
 }
+
+/* Replace .action-button with these */
+.button {
+  border: 1px solid #22d3ee;
+  color: #22d3ee;
+  background-color: transparent;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.button:hover {
+  color: #111827;
+  background-color: #22d3ee;
+}
+
+.button-primary {
+  color: #111827;
+  background-color: #22d3ee;
+}

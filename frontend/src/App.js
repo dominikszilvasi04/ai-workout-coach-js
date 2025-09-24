@@ -1,22 +1,20 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react'; // Import useEffect
 import axios from 'axios';
-import Modal from './Modal'; // Import our new Modal component
+import Modal from './Modal';
 import './App.css';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
-// --- Suggestion Lists ---
-const goalOptions = [
-  'Build Muscle', 'Lose Weight', 'Increase Strength', 'Cardio Endurance', 'Improve Flexibility',
-  'Body Recomposition', 'General Fitness', 'Athletic Performance', 'Hypertrophy', 'Powerlifting',
-  'Functional Fitness', 'Core Strength', 'Improve Posture', 'Toning', 'HIIT Training'
+// --- FULL LIST OF SUGGESTIONS ---
+const allGoalOptions = [
+  'Build Muscle', 'Lose Weight', 'Increase Strength', 'Cardio Endurance', 'Improve Flexibility', 'Body Recomposition', 'General Fitness', 'Athletic Performance', 'Hypertrophy', 'Powerlifting', 'Functional Fitness', 'Core Strength', 'Improve Posture', 'Toning', 'HIIT Training', 'Yoga', 'Pilates', 'Circuit Training', 'CrossFit', 'Bodybuilding', 'Weightlifting', 'Calisthenics', 'Plyometrics', 'Agility Training', 'Balance Training',
 ];
 
-const equipmentOptions = [
-  'Dumbbells', 'Barbell', 'Bodyweight', 'Kettlebells', 'Resistance Bands', 'Squat Rack',
-  'Bench', 'Pull-up Bar', 'Cable Machine', 'Leg Press Machine', 'Treadmill', 'Stationary Bike',
-  'Rowing Machine', 'Medicine Ball', 'None'
+const allEquipmentOptions = [
+  'Dumbbells', 'Barbell', 'Bodyweight', 'Kettlebells', 'Resistance Bands', 'Squat Rack', 'Bench', 'Pull-up Bar', 'Cable Machine', 'Leg Press Machine', 'Treadmill', 'Stationary Bike', 'Rowing Machine', 'Medicine Ball', 'None', 'Yoga Mat', 'Foam Roller', 'Jump Rope', 'StairMaster', 'Elliptical Machine', 'Smith Machine', 'Dip Station', 'Ab Wheel', 'TRX Straps', 'Hex Bar',
 ];
+
+const VISIBLE_OPTIONS_COUNT = 15; // How many options to show at once
 
 function App() {
   const [formData, setFormData] = useState({
@@ -24,26 +22,45 @@ function App() {
     equipment: 'Dumbbells',
     days: 3,
   });
-  // State to manage which modal is open ('goal', 'equipment', or null)
   const [modalType, setModalType] = useState(null);
+  
+  // --- New state for the VISIBLE suggestions ---
+  const [visibleGoals, setVisibleGoals] = useState([]);
+  const [visibleEquipment, setVisibleEquipment] = useState([]);
   
   const [workoutPlan, setWorkoutPlan] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
   const [copyText, setCopyText] = useState('Copy');
   const planRef = useRef(null);
+
+  // --- Effect to initialize the visible lists ---
+  useEffect(() => {
+    setVisibleGoals(allGoalOptions.slice(0, VISIBLE_OPTIONS_COUNT));
+    setVisibleEquipment(allEquipmentOptions.slice(0, VISIBLE_OPTIONS_COUNT));
+  }, []);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
   
-  // This function handles adding selections from the modal
+  // --- This function now handles both selecting and refreshing the list ---
   const handleSelect = (type, option) => {
+    // Add the selected option to the form input
     const currentVal = formData[type];
-    // If the input is empty, just add the option. Otherwise, add a comma first.
     const newVal = currentVal ? `${currentVal}, ${option}` : option;
     setFormData({ ...formData, [type]: newVal });
+
+    // Refresh the list of suggestions
+    if (type === 'goal') {
+      const remainingGoals = allGoalOptions.filter(g => !visibleGoals.includes(g));
+      const nextGoal = remainingGoals.length > 0 ? remainingGoals[0] : allGoalOptions[Math.floor(Math.random() * allGoalOptions.length)];
+      setVisibleGoals(prev => [...prev.filter(p => p !== option), nextGoal]);
+    } else if (type === 'equipment') {
+      const remainingEquip = allEquipmentOptions.filter(e => !visibleEquipment.includes(e));
+      const nextEquip = remainingEquip.length > 0 ? remainingEquip[0] : allEquipmentOptions[Math.floor(Math.random() * allEquipmentOptions.length)];
+      setVisibleEquipment(prev => [...prev.filter(p => p !== option), nextEquip]);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -86,7 +103,7 @@ function App() {
         isOpen={modalType === 'goal'}
         onClose={() => setModalType(null)}
         title="Select Fitness Goal(s)"
-        options={goalOptions}
+        options={visibleGoals} // Use the visible list from state
         onSelect={(option) => handleSelect('goal', option)}
       />
 
@@ -94,7 +111,7 @@ function App() {
         isOpen={modalType === 'equipment'}
         onClose={() => setModalType(null)}
         title="Select Available Equipment"
-        options={equipmentOptions}
+        options={visibleEquipment} // Use the visible list from state
         onSelect={(option) => handleSelect('equipment', option)}
       />
 
@@ -132,8 +149,8 @@ function App() {
           <div className="plan-header">
             <h2>Your Custom Workout Plan</h2>
             <div className="plan-actions">
-              <button onClick={handleCopy} className="action-button">{copyText}</button>
-              <button onClick={handleDownloadPdf} className="action-button">Download PDF</button>
+              <button onClick={handleCopy} className="button">{copyText}</button>
+              <button onClick={handleDownloadPdf} className="button button-primary">Download PDF</button>
             </div>
           </div>
           <pre>
