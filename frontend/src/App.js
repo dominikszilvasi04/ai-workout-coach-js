@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import axios from 'axios';
 import Modal from './Modal'; // Import our new Modal component
 import './App.css';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 // --- Suggestion Lists ---
 const goalOptions = [
@@ -28,6 +30,9 @@ function App() {
   const [workoutPlan, setWorkoutPlan] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const [copyText, setCopyText] = useState('Copy');
+  const planRef = useRef(null);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -56,10 +61,27 @@ function App() {
       setLoading(false);
     }
   };
+  
+  const handleCopy = () => {
+    navigator.clipboard.writeText(workoutPlan.trim());
+    setCopyText('Copied!');
+    setTimeout(() => setCopyText('Copy'), 2000); // Reset after 2 seconds
+  };
+
+  const handleDownloadPdf = () => {
+    const input = planRef.current;
+    html2canvas(input, { backgroundColor: '#1f2937' }).then((canvas) => {
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save('ai-workout-plan.pdf');
+    });
+  };
 
   return (
     <div className="app-container">
-      {/* This is our Goal Modal, it only shows when modalType is 'goal' */}
       <Modal
         isOpen={modalType === 'goal'}
         onClose={() => setModalType(null)}
@@ -68,7 +90,6 @@ function App() {
         onSelect={(option) => handleSelect('goal', option)}
       />
 
-      {/* This is our Equipment Modal, it only shows when modalType is 'equipment' */}
       <Modal
         isOpen={modalType === 'equipment'}
         onClose={() => setModalType(null)}
@@ -82,21 +103,18 @@ function App() {
 
       <form onSubmit={handleSubmit} className="form">
         <div className="form-grid">
-          {/* --- GOAL INPUT --- */}
           <div className="form-group">
             <label htmlFor="goal">Fitness Goal</label>
             <input type="text" name="goal" id="goal" value={formData.goal} onChange={handleChange} placeholder="e.g., Build Muscle" />
             <button type="button" className="picker-button" onClick={() => setModalType('goal')}>Choose from list</button>
           </div>
 
-          {/* --- EQUIPMENT INPUT --- */}
           <div className="form-group">
             <label htmlFor="equipment">Equipment</label>
             <input type="text" name="equipment" id="equipment" value={formData.equipment} onChange={handleChange} placeholder="e.g., Dumbbells, Bodyweight" />
             <button type="button" className="picker-button" onClick={() => setModalType('equipment')}>Choose from list</button>
           </div>
 
-          {/* --- DAYS INPUT (Unchanged) --- */}
           <div className="form-group">
             <label htmlFor="days">Days per week</label>
             <input type="number" name="days" id="days" value={formData.days} min="1" max="7" onChange={handleChange} />
@@ -110,9 +128,20 @@ function App() {
       {error && <p className="app-subtitle" style={{color: '#f87171'}}>{error}</p>}
 
       {workoutPlan && (
-        <div className="workout-plan">
-          <h2>Your Custom Workout Plan</h2>
-          <pre>{workoutPlan.trim()}</pre>
+        <div className="workout-plan" ref={planRef}>
+          <div className="plan-header">
+            <h2>Your Custom Workout Plan</h2>
+            <div className="plan-actions">
+              <button onClick={handleCopy} className="action-button">{copyText}</button>
+              <button onClick={handleDownloadPdf} className="action-button">Download PDF</button>
+            </div>
+          </div>
+          <pre>
+            {workoutPlan
+              .split('\n')
+              .map(line => line.trim())
+              .join('\n')}
+          </pre>
         </div>
       )}
     </div>
