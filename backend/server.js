@@ -1,6 +1,6 @@
 // 1. Import necessary packages
 const express = require('express');
-const OpenAI = require('openai'); // Import the OpenAI library
+const OpenAI = require('openai');
 const cors = require('cors');
 require('dotenv').config();
 
@@ -22,41 +22,45 @@ app.post('/api/v1/generate-workout', async (req, res) => {
   try {
     const { goal, equipment, days } = req.body;
 
-    // Basic validation
-    if (!goal || !equipment || !days) {
-      return res.status(400).json({ error: 'Please provide all required fields.' });
-    }
+    // Set headers for streaming response
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
 
     const prompt = `Generate a ${days}-day ${goal} workout plan using ${equipment}. Format exactly like this:
     Day 1 (~total time):
     • Exercise 4x12 – one short tip on proper form
     • Exercise 3x15 – one short tip on proper form
     • Exercise 3x12 – one short tip on proper form
-    Each day should have 4–5 exercises. Keep instructions very concise, focused only on form cues. Include an estimated total time for the day in parentheses next to the day. Use consistent, neat formatting with each exercise on a new line. Do not add introductions, explanations, or extra commentary.`;
-    // 6. Make the API call to OpenAI
-    const response = await openai.chat.completions.create({
+Each day should have 4–5 exercises. Keep instructions very concise, focused only on form cues or general tip. Include an estimated total time for the day in parentheses next to the day. Use consistent, neat formatting with each exercise on a new line. Do not add introductions, explanations, or extra commentary.`;
+
+    const stream = await openai.chat.completions.create({
       model: 'gpt-5-nano',
-      messages: [
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
+      messages: [{ role: 'user', content: prompt }],
+      stream: true,
     });
 
-    // 7. Send the generated text back to our frontend
-    const generatedText = response.choices[0].message.content;
-    res.json({ plan: generatedText.trim() });
+    // Loop through the stream and send each chunk to the frontend
+    for await (const chunk of stream) {
+      const content = chunk.choices[0]?.delta?.content || '';
+      res.write(content);
+    }
+
+    // End the response when the stream is finished
+    res.end();
 
   } catch (error) {
-    console.error('--- OPENAI API ERROR ---');
-    console.error('Error Code:', error.code);
-    console.error('Error Message:', error.message);
-    res.status(500).json({ error: 'Failed to generate workout plan.' });
+    console.error('--- STREAMING ERROR ---', error);
+    // If an error occurs, ensure the response is properly ended
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Failed to generate workout plan.' });
+    } else {
+      res.end();
+    }
   }
 });
 
-// 8. Start the server
+// 6. Start the server
 app.listen(PORT, () => {
   console.log(`✅ Server is running on http://localhost:${PORT}`);
 });

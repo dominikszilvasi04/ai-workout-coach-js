@@ -67,11 +67,36 @@ function App() {
     e.preventDefault();
     setLoading(true);
     setError('');
-    setWorkoutPlan('');
+    setWorkoutPlan(''); // Clear previous plan
 
     try {
-      const response = await axios.post('http://localhost:8080/api/v1/generate-workout', formData);
-      setWorkoutPlan(response.data.plan);
+      const response = await fetch('http://localhost:8080/api/v1/generate-workout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+
+      // Get the reader from the response body to read the stream
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+
+      // Read the stream chunk by chunk
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) {
+          break; // The stream is finished
+        }
+        // Decode the chunk and append it to our state
+        const chunk = decoder.decode(value);
+        setWorkoutPlan((prevPlan) => prevPlan + chunk);
+      }
+
     } catch (err) {
       setError('Failed to generate workout plan. Please try again.');
     } finally {
