@@ -213,3 +213,7 @@ body {
     transform: translateY(0);
   }
 }
+
+.grid-span-full {
+  grid-column: 1 / -1;
+}

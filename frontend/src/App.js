@@ -132,7 +132,7 @@ function App() {
             <button type="button" className="picker-button" onClick={() => setModalType('equipment')}>Choose from list</button>
           </div>
 
-          <div className="form-group">
+          <div className="form-group grid-span-full">
             <label>Days per week</label>
             <div className="day-selector">
               {[1, 2, 3, 4, 5, 6, 7].map((day) => (
