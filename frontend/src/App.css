@@ -1,3 +1,6 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+}
 body {
   background-color: #111827;
   color: white;
@@ -108,4 +111,22 @@ body {
   color: #d1d5db;
   font-size: 1rem;
   line-height: 1.6;
+}
+
+.picker-button {
+  width: 100%;
+  background-color: #374151;
+  border: 1px solid #4b5563;
+  color: #d1d5db;
+  padding: 0.5rem;
+  border-radius: 6px;
+  margin-top: 0.5rem;
+  cursor: pointer;
+  text-align: center;
+  font-size: 0.9rem;
+  transition: background-color 0.2s;
+}
+
+.picker-button:hover {
+  background-color: #4b5563;
 }
