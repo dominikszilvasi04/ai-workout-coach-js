@@ -96,7 +96,7 @@ function App() {
       {workoutPlan && (
         <div className="workout-plan">
           <h2>Your Custom Workout Plan</h2>
-          <pre>{workoutPlan}</pre>
+          <pre>{workoutPlan.trim()}</pre>
         </div>
       )}
     </div>

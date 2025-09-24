@@ -27,8 +27,12 @@ app.post('/api/v1/generate-workout', async (req, res) => {
       return res.status(400).json({ error: 'Please provide all required fields.' });
     }
 
-    const prompt = `Give me a ${days}-day workout plan for the goal of '${goal}'. I have access to the following equipment: '${equipment}'. Provide a detailed plan for each day, starting each day with 'Day 1:', 'Day 2:', etc. Also provide sets and reps.`;
-
+    const prompt = `Generate a ${days}-day ${goal} workout plan using ${equipment}. Format exactly like this:
+    Day 1 (~total time):
+    • Exercise 4x12 – one short tip on proper form
+    • Exercise 3x15 – one short tip on proper form
+    • Exercise 3x12 – one short tip on proper form
+    Each day should have 4–5 exercises. Keep instructions very concise, focused only on form cues. Include an estimated total time for the day in parentheses next to the day. Use consistent, neat formatting with each exercise on a new line. Do not add introductions, explanations, or extra commentary.`;
     // 6. Make the API call to OpenAI
     const response = await openai.chat.completions.create({
       model: 'gpt-5-nano',
