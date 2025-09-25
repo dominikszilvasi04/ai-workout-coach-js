@@ -235,7 +235,7 @@ const handleSwapExercise = async (dayIndex, exerciseId) => {
         onSelect={(option) => handleSelect('equipment', option)}
       />
 
-      <h1 className="app-title">AI Workout Coach</h1>
+      <h1 className="app-title">SmartReps</h1>
       <p className="app-subtitle">Generate your personalized workout plan with AI.</p>
 
       <form onSubmit={handleSubmit} className="form">
