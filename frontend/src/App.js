@@ -111,7 +111,7 @@ function App() {
     };
 
     try {
-      const response = await fetch('http://localhost:8080/api/v1/generate-workout', {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/v1/generate-workout`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -198,7 +198,7 @@ const handleSwapExercise = async (dayIndex, exerciseId) => {
   });
 
   try {
-      const response = await axios.post('http://localhost:8080/api/v1/swap-exercise', {
+      const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/v1/swap-exercise`, {
           exercise: originalText.replace('•', '').split('–')[0].trim(),
           equipment: formData.equipment.join(', ')
       });
