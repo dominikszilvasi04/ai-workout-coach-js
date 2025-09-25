@@ -49,7 +49,6 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [copyText, setCopyText] = useState('Copy');
-  const planRef = useRef(null);
 
   useEffect(() => {
     setVisibleGoals(allGoalOptions.slice(0, VISIBLE_OPTIONS_COUNT));
@@ -297,7 +296,7 @@ const handleSwapExercise = async (dayIndex, exerciseId) => {
                 <button
                   key={day}
                   type="button"
-                  className={`day-button ${formData.days == day ? 'active' : ''}`}
+                  className={`day-button ${formData.days === day ? 'active' : ''}`}
                   onClick={() => setFormData({ ...formData, days: day })}
                 >
                   {day}
