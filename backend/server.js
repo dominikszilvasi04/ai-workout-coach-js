@@ -1,7 +1,9 @@
 // 1. Import necessary packages
 const express = require('express');
 const OpenAI = require('openai');
-const cors = require('cors');
+app.use(cors({
+  origin: 'https://smartrepsai.netlify.app'
+}));
 require('dotenv').config();
 
 // 2. Initialize the OpenAI client with your API key
