@@ -140,78 +140,83 @@ function App() {
   };
   
   const handleCopy = () => {
-    const planText = planRef.current?.innerText;
-    if (planText) {
-      navigator.clipboard.writeText(planText);
-      setCopyText('Copied!');
-      setTimeout(() => setCopyText('Copy'), 2000);
-    }
-  };
-
-  const handleDownloadPdf = () => {
-    const planText = planRef.current?.innerText;
-    if (!planText) return;
-
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    const margin = 15;
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = pdf.internal.pageSize.getHeight();
-    const usableWidth = pageWidth - margin * 2;
-    let y = margin + 10;
-
-    pdf.setFontSize(18);
-    pdf.text("Your AI Workout Plan", pageWidth / 2, y, { align: 'center' });
-    y += 10;
-    pdf.setLineWidth(0.5);
-    pdf.line(margin, y, pageWidth - margin, y);
-    y += 10;
-
-    pdf.setFontSize(10);
-    const lines = pdf.splitTextToSize(planText, usableWidth);
-    
-    lines.forEach(line => {
-      if (y + 5 > pageHeight - margin) {
-        pdf.addPage();
-        y = margin;
-      }
-      pdf.text(line, margin, y);
-      y += 5;
+  let textToCopy = "Your Custom Workout Plan\n\n";
+  workoutPlan.forEach(day => {
+    textToCopy += day.dayTitle + '\n';
+    day.exercises.forEach(ex => {
+      textToCopy += ex.text + '\n';
     });
+    textToCopy += '\n';
+  });
 
-    pdf.save('ai-workout-plan.pdf');
-  };
+  navigator.clipboard.writeText(textToCopy);
+  setCopyText('Copied!');
+  setTimeout(() => setCopyText('Copy'), 2000);
+};
 
-  const handleSwapExercise = async (dayIndex, exerciseId) => {
-    const exerciseToSwap = workoutPlan[dayIndex].exercises.find(ex => ex.id === exerciseId);
-    if (!exerciseToSwap) return;
-    
-    const originalText = exerciseToSwap.text;
-    setWorkoutPlan(prevPlan => {
-        const newPlan = JSON.parse(JSON.stringify(prevPlan));
-        newPlan[dayIndex].exercises.find(ex => ex.id === exerciseId).text = "• Swapping...";
-        return newPlan;
+const handleDownloadPdf = () => {
+  let textForPdf = "Your Custom Workout Plan\n\n";
+    workoutPlan.forEach(day => {
+      textForPdf += day.dayTitle + '\n';
+      day.exercises.forEach(ex => {
+        textForPdf += ex.text + '\n';
+      });
+      textForPdf += '\n';
     });
+  
+  const pdf = new jsPDF('p', 'mm', 'a4');
+  const margin = 15;
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
+  const usableWidth = pageWidth - margin * 2;
+  let y = margin;
 
-    try {
-        const response = await axios.post('http://localhost:8080/api/v1/swap-exercise', {
-            exercise: originalText.replace('•', '').split('–')[0].trim(),
-            equipment: formData.equipment.join(', ')
-        });
-        
-        setWorkoutPlan(prevPlan => {
-            const newPlan = JSON.parse(JSON.stringify(prevPlan));
-            newPlan[dayIndex].exercises.find(ex => ex.id === exerciseId).text = response.data.newExercise;
-            return newPlan;
-        });
-    } catch (err) {
-        console.error("Failed to swap exercise", err);
-        setWorkoutPlan(prevPlan => {
-            const newPlan = JSON.parse(JSON.stringify(prevPlan));
-            newPlan[dayIndex].exercises.find(ex => ex.id === exerciseId).text = originalText;
-            return newPlan;
-        });
+  pdf.setFontSize(10);
+  const lines = pdf.splitTextToSize(textForPdf, usableWidth);
+  
+  lines.forEach(line => {
+    if (y + 5 > pageHeight - margin) {
+      pdf.addPage();
+      y = margin;
     }
-  };
+    pdf.text(line, margin, y);
+    y += 5;
+  });
+
+  pdf.save('ai-workout-plan.pdf');
+};
+
+const handleSwapExercise = async (dayIndex, exerciseId) => {
+  const exerciseToSwap = workoutPlan[dayIndex].exercises.find(ex => ex.id === exerciseId);
+  if (!exerciseToSwap) return;
+  
+  const originalText = exerciseToSwap.text;
+  setWorkoutPlan(prevPlan => {
+      const newPlan = JSON.parse(JSON.stringify(prevPlan));
+      newPlan[dayIndex].exercises.find(ex => ex.id === exerciseId).text = "• Swapping...";
+      return newPlan;
+  });
+
+  try {
+      const response = await axios.post('http://localhost:8080/api/v1/swap-exercise', {
+          exercise: originalText.replace('•', '').split('–')[0].trim(),
+          equipment: formData.equipment.join(', ')
+      });
+      
+      setWorkoutPlan(prevPlan => {
+          const newPlan = JSON.parse(JSON.stringify(prevPlan));
+          newPlan[dayIndex].exercises.find(ex => ex.id === exerciseId).text = response.data.newExercise;
+          return newPlan;
+      });
+  } catch (err) {
+      console.error("Failed to swap exercise", err);
+      setWorkoutPlan(prevPlan => { // Revert on failure
+          const newPlan = JSON.parse(JSON.stringify(prevPlan));
+          newPlan[dayIndex].exercises.find(ex => ex.id === exerciseId).text = originalText;
+          return newPlan;
+      });
+  }
+};
 
 
   return (
@@ -309,33 +314,33 @@ function App() {
       {error && <p className="app-subtitle" style={{color: '#f87171'}}>{error}</p>}
 
       {workoutPlan.length > 0 && (
-        <div className="workout-plan">
-          <div className="plan-header" ref={planRef}>
-            <h2>Your Custom Workout Plan</h2>
-            <div className="plan-actions">
-              <button onClick={generatePlan} className="button">Regenerate</button>
-              <button onClick={handleCopy} className="button">{copyText}</button>
-              <button onClick={handleDownloadPdf} className="button button-primary">Download PDF</button>
-            </div>
-          </div>
-          
-          {workoutPlan.map((day, dayIndex) => (
-            <div key={day.dayTitle || dayIndex} className="day-plan">
-              <h3>{day.dayTitle}</h3>
-              <ul>
-                {day.exercises.map((exercise) => (
-                  <li key={exercise.id}>
-                    <span>{exercise.text}</span>
-                    <button className="swap-button" title="Swap exercise" onClick={() => handleSwapExercise(dayIndex, exercise.id)}>
-                      🔄
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
+  <div className="workout-plan">
+    <div className="plan-header">
+      <h2>Your Custom Workout Plan</h2>
+      <div className="plan-actions">
+        <button onClick={generatePlan} className="button">Regenerate</button>
+        <button onClick={handleCopy} className="button">{copyText}</button>
+        <button onClick={handleDownloadPdf} className="button button-primary">Download PDF</button>
+      </div>
+    </div>
+    
+    {workoutPlan.map((day, dayIndex) => (
+      <div key={day.dayTitle || dayIndex} className="day-plan">
+        <h3>{day.dayTitle}</h3>
+        <ul>
+          {day.exercises.map((exercise) => (
+            <li key={exercise.id}>
+              <span>{exercise.text}</span>
+              <button className="swap-button" title="Swap exercise" onClick={() => handleSwapExercise(dayIndex, exercise.id)}>
+                🔄
+              </button>
+            </li>
           ))}
-        </div>
-      )}
+        </ul>
+      </div>
+    ))}
+  </div>
+  )}
     </div>
   );
 }
