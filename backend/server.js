@@ -60,6 +60,34 @@ app.post('/api/v1/generate-workout', async (req, res) => {
   }
 });
 
+
+app.post('/api/v1/swap-exercise', async (req, res) => {
+  try {
+    const { exercise, equipment } = req.body;
+
+    if (!exercise || !equipment) {
+      return res.status(400).json({ error: 'Exercise and equipment are required.' });
+    }
+
+    const prompt = `Suggest a single alternative exercise for "${exercise}" that uses the following equipment: "${equipment}".
+    The new exercise must target the same primary muscle group.
+    Provide only the new exercise in this exact format: • Exercise Name SetsxReps – Short Form Tip
+    Do not add any other text, introductions, or explanations.`;
+
+    const response = await openai.chat.completions.create({
+      model: 'gpt-5-nano',
+      messages: [{ role: 'user', content: prompt }],
+    });
+
+    const newExercise = response.choices[0].message.content.trim();
+    res.json({ newExercise });
+
+  } catch (error) {
+    console.error('--- SWAP EXERCISE ERROR ---', error);
+    res.status(500).json({ error: 'Failed to swap exercise.' });
+  }
+});
+
 // 6. Start the server
 app.listen(PORT, () => {
   console.log(`✅ Server is running on http://localhost:${PORT}`);

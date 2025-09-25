@@ -287,3 +287,54 @@ body {
   margin-top: 0;
   width: auto;
 }
+
+.day-plan {
+  margin-bottom: 1.5rem;
+}
+
+.day-plan h3 {
+  margin-top: 0;
+  margin-bottom: 0.75rem;
+  color: #9ca3af;
+  font-weight: bold;
+  font-size: 1rem;
+}
+
+.day-plan ul {
+  padding-left: 0;
+  margin: 0;
+  list-style: none;
+  font-family: inherit;
+  color: #d1d5db;
+}
+
+.day-plan li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.25rem 0;
+  border-bottom: 1px solid #374151;
+}
+
+.day-plan li:last-child {
+  border-bottom: none;
+}
+
+.day-plan li span {
+  line-height: 1.6;
+}
+
+.swap-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.2rem;
+  opacity: 0.5;
+  transition: opacity 0.2s, transform 0.2s;
+  padding: 0.25rem;
+}
+
+.swap-button:hover {
+  opacity: 1;
+  transform: rotate(90deg);
+}

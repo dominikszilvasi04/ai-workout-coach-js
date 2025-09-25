@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
+import axios from 'axios'; 
 import Modal from './Modal';
 import './App.css';
 import jsPDF from 'jspdf';
 
-// --- FULL LIST OF SUGGESTIONS ---
+
 const allGoalOptions = [
   'Build Muscle', 'Lose Weight', 'Increase Strength', 'Cardio Endurance', 'Improve Flexibility', 'Body Recomposition', 'General Fitness', 'Athletic Performance', 'Hypertrophy', 'Powerlifting', 'Functional Fitness', 'Core Strength', 'Improve Posture', 'Toning', 'HIIT Training', 'Yoga', 'Pilates', 'Circuit Training', 'CrossFit', 'Bodybuilding', 'Weightlifting', 'Calisthenics', 'Plyometrics', 'Agility Training', 'Balance Training',
 ];
@@ -11,6 +12,27 @@ const allEquipmentOptions = [
   'Dumbbells', 'Barbell', 'Bodyweight', 'Kettlebells', 'Resistance Bands', 'Squat Rack', 'Bench', 'Pull-up Bar', 'Cable Machine', 'Leg Press Machine', 'Treadmill', 'Stationary Bike', 'Rowing Machine', 'Medicine Ball', 'None', 'Yoga Mat', 'Foam Roller', 'Jump Rope', 'StairMaster', 'Elliptical Machine', 'Smith Machine', 'Dip Station', 'Ab Wheel', 'TRX Straps', 'Hex Bar',
 ];
 const VISIBLE_OPTIONS_COUNT = 15;
+
+const parseWorkoutPlan = (text) => {
+  if (!text.trim()) return [];
+  
+  
+  const dayBlocks = text.trim().split(/\s*(?=Day \d+)/).filter(Boolean);
+
+  let exerciseIdCounter = 0;
+  return dayBlocks.map(block => {
+    const lines = block.trim().split('\n');
+    const dayTitle = lines.shift() || ''; // Take the first line as the title
+    
+    // The rest of the lines are exercises
+    const exercises = lines.filter(line => line.trim().startsWith('•')).map(exerciseText => ({
+      id: exerciseIdCounter++,
+      text: exerciseText.trim()
+    }));
+
+    return { dayTitle, exercises };
+  });
+};
 
 function App() {
   const [formData, setFormData] = useState({
@@ -21,9 +43,9 @@ function App() {
   const [modalType, setModalType] = useState(null);
   const [visibleGoals, setVisibleGoals] = useState([]);
   const [visibleEquipment, setVisibleEquipment] = useState([]);
-  const [customGoal, setCustomGoal] = useState(''); // Added state for custom goal
+  const [customGoal, setCustomGoal] = useState('');
   const [customEquipment, setCustomEquipment] = useState('');
-  const [workoutPlan, setWorkoutPlan] = useState('');
+  const [workoutPlan, setWorkoutPlan] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [copyText, setCopyText] = useState('Copy');
@@ -79,9 +101,9 @@ function App() {
   const generatePlan = async () => {
     setLoading(true);
     setError('');
-    setWorkoutPlan('');
+    setWorkoutPlan([]);
+    let fullTextResponse = "";
     
-    // Corrected: Join both goal and equipment arrays into strings for the API
     const payload = {
       ...formData,
       goal: formData.goal.join(', '),
@@ -102,7 +124,8 @@ function App() {
         const { done, value } = await reader.read();
         if (done) break;
         const chunk = decoder.decode(value);
-        setWorkoutPlan((prevPlan) => prevPlan + chunk);
+        fullTextResponse += chunk;
+        setWorkoutPlan(parseWorkoutPlan(fullTextResponse));
       }
     } catch (err) {
       setError('Failed to generate workout plan. Please try again.');
@@ -157,6 +180,39 @@ function App() {
 
     pdf.save('ai-workout-plan.pdf');
   };
+
+  const handleSwapExercise = async (dayIndex, exerciseId) => {
+    const exerciseToSwap = workoutPlan[dayIndex].exercises.find(ex => ex.id === exerciseId);
+    if (!exerciseToSwap) return;
+    
+    const originalText = exerciseToSwap.text;
+    setWorkoutPlan(prevPlan => {
+        const newPlan = JSON.parse(JSON.stringify(prevPlan));
+        newPlan[dayIndex].exercises.find(ex => ex.id === exerciseId).text = "• Swapping...";
+        return newPlan;
+    });
+
+    try {
+        const response = await axios.post('http://localhost:8080/api/v1/swap-exercise', {
+            exercise: originalText.replace('•', '').split('–')[0].trim(),
+            equipment: formData.equipment.join(', ')
+        });
+        
+        setWorkoutPlan(prevPlan => {
+            const newPlan = JSON.parse(JSON.stringify(prevPlan));
+            newPlan[dayIndex].exercises.find(ex => ex.id === exerciseId).text = response.data.newExercise;
+            return newPlan;
+        });
+    } catch (err) {
+        console.error("Failed to swap exercise", err);
+        setWorkoutPlan(prevPlan => {
+            const newPlan = JSON.parse(JSON.stringify(prevPlan));
+            newPlan[dayIndex].exercises.find(ex => ex.id === exerciseId).text = originalText;
+            return newPlan;
+        });
+    }
+  };
+
 
   return (
     <div className="app-container">
@@ -252,9 +308,9 @@ function App() {
 
       {error && <p className="app-subtitle" style={{color: '#f87171'}}>{error}</p>}
 
-      {workoutPlan && (
+      {workoutPlan.length > 0 && (
         <div className="workout-plan">
-          <div className="plan-header">
+          <div className="plan-header" ref={planRef}>
             <h2>Your Custom Workout Plan</h2>
             <div className="plan-actions">
               <button onClick={generatePlan} className="button">Regenerate</button>
@@ -262,12 +318,22 @@ function App() {
               <button onClick={handleDownloadPdf} className="button button-primary">Download PDF</button>
             </div>
           </div>
-          <pre ref={planRef}>
-            {workoutPlan
-              .split('\n')
-              .map(line => line.trim())
-              .join('\n')}
-          </pre>
+          
+          {workoutPlan.map((day, dayIndex) => (
+            <div key={day.dayTitle || dayIndex} className="day-plan">
+              <h3>{day.dayTitle}</h3>
+              <ul>
+                {day.exercises.map((exercise) => (
+                  <li key={exercise.id}>
+                    <span>{exercise.text}</span>
+                    <button className="swap-button" title="Swap exercise" onClick={() => handleSwapExercise(dayIndex, exercise.id)}>
+                      🔄
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
       )}
     </div>
