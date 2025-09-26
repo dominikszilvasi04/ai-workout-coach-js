@@ -10,10 +10,10 @@ const openai = new OpenAI({
 });
 
 // 3. Set up the Express app
-const app = express(); // <<< THIS LINE WAS MOVED UP
+const app = express(); 
 const PORT = 8080;
 
-// 4. Set up middleware (MUST be after `const app = express()`)
+// 4. Set up middleware 
 app.use(cors({
   origin: 'https://smartrepsai.netlify.app'
 }));
@@ -35,7 +35,7 @@ Day 1 (~total time):
 Each day should have 4–5 exercises. Keep instructions concise and focused on form cues. Include an estimated total time for the day in parentheses. Use neat formatting. Do not add introductions or extra commentary.`;
 
     const stream = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: 'gpt-5-nano',
       messages: [{ role: 'user', content: prompt }],
       stream: true,
     });
@@ -68,7 +68,7 @@ Provide ONLY the new exercise line in this exact format: • Exercise Name Setsx
 Do not add any other text, introductions, or explanations.`;
 
     const response = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: 'gpt-5-nano',
       messages: [{ role: 'user', content: prompt }],
     });
 
